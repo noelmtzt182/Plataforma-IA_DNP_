@@ -1,3 +1,4 @@
+import streamlit as st
 import pandas as pd
 import numpy as np
 
@@ -13,20 +14,31 @@ from sklearn.metrics import (
     mean_absolute_error
 )
 
+st.set_page_config(page_title="Modelo ML", layout="wide")
+st.title("Modelo de Clasificación y Regresión")
+
 # ============================
 # 1. Cargar datos
 # ============================
-df = pd.read_csv("mercado_cereales_5000_con_ventas.csv")
+csv_path = "mercado_cereales_5000_con_ventas.csv"
+
+try:
+    df = pd.read_csv(csv_path)
+    st.success(f"Archivo cargado correctamente: {csv_path}")
+except Exception as e:
+    st.error(f"No se pudo cargar el archivo CSV: {e}")
+    st.stop()
+
+st.write("Vista previa del dataset")
+st.dataframe(df.head())
 
 # ============================
 # 2. Limpieza básica
 # ============================
-# Normalizar texto
 for col in ["marca", "categoria", "canal", "estacionalidad", "comentario"]:
     if col in df.columns:
         df[col] = df[col].astype(str).str.strip().str.lower()
 
-# Convertir columnas numéricas
 numeric_cols = [
     "precio", "costo", "margen", "margen_pct",
     "competencia", "demanda", "tendencia",
@@ -39,15 +51,15 @@ for col in numeric_cols:
     if col in df.columns:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
-# Eliminar nulos en columnas críticas
 df = df.dropna(subset=[
     "marca", "canal", "precio", "competencia", "demanda",
     "tendencia", "margen_pct", "conexion_score",
     "rating_conexion", "sentiment_score", "exito", "ventas_unidades"
 ])
 
-# Asegurar variable objetivo de clasificación como entero
 df["exito"] = df["exito"].astype(int)
+
+st.write("Dimensiones del dataset limpio:", df.shape)
 
 # ============================
 # 3. Definir variables
@@ -62,7 +74,6 @@ X = df[features].copy()
 y_class = df["exito"].copy()
 y_reg = df["ventas_unidades"].copy()
 
-# Columnas numéricas y categóricas
 num_cols = [
     "precio", "competencia", "demanda", "tendencia",
     "margen_pct", "conexion_score", "rating_conexion", "sentiment_score"
@@ -104,11 +115,13 @@ accuracy = accuracy_score(y_test_c, y_pred_c)
 auc = roc_auc_score(y_test_c, y_prob_c)
 cm = confusion_matrix(y_test_c, y_pred_c)
 
-print("=== MODELO DE CLASIFICACIÓN ===")
-print(f"Accuracy: {accuracy:.4f}")
-print(f"ROC-AUC: {auc:.4f}")
-print("Matriz de confusión:")
-print(cm)
+st.subheader("Resultados del modelo de clasificación")
+c1, c2 = st.columns(2)
+c1.metric("Accuracy", f"{accuracy:.4f}")
+c2.metric("ROC-AUC", f"{auc:.4f}")
+
+st.write("Matriz de confusión")
+st.dataframe(pd.DataFrame(cm, index=["Real 0", "Real 1"], columns=["Pred 0", "Pred 1"]))
 
 # ============================
 # 6. Modelo de regresión
@@ -130,8 +143,8 @@ reg_model.fit(X_train_r, y_train_r)
 y_pred_r = reg_model.predict(X_test_r)
 mae = mean_absolute_error(y_test_r, y_pred_r)
 
-print("\n=== MODELO DE REGRESIÓN ===")
-print(f"MAE: {mae:.2f}")
+st.subheader("Resultados del modelo de regresión")
+st.metric("MAE", f"{mae:.2f}")
 
 # ============================
 # 7. Ejemplo de predicción
@@ -152,6 +165,7 @@ nuevo_producto = pd.DataFrame([{
 prob_exito = clf_model.predict_proba(nuevo_producto)[0][1]
 ventas_estimadas = reg_model.predict(nuevo_producto)[0]
 
-print("\n=== PREDICCIÓN PARA NUEVO PRODUCTO ===")
-print(f"Probabilidad de éxito: {prob_exito*100:.2f}%")
-print(f"Ventas estimadas: {ventas_estimadas:.0f} unidades")
+st.subheader("Predicción para nuevo producto")
+p1, p2 = st.columns(2)
+p1.metric("Probabilidad de éxito", f"{prob_exito*100:.2f}%")
+p2.metric("Ventas estimadas", f"{ventas_estimadas:.0f} unidades")

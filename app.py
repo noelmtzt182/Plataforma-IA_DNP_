@@ -1,8 +1,3 @@
-import streamlit as st
-st.set_page_config(page_title="Test", layout="wide")
-st.title("App arrancó bien ✅")
-st.write("Si ves esto, Streamlit sí está cargando.")
-
 
 import pandas as pd
 import numpy as np

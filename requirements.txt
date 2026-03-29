@@ -1,5 +1,8 @@
-streamlit
+sstreamlit
 pandas
 numpy
 scikit-learn
+scipy
 Pillow
+imageio
+imageio-ffmpeg
